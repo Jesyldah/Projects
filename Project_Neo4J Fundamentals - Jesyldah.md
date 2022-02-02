@@ -1,0 +1,206 @@
+# Project_Neo4J Fundamentals - Jesyldah
+## Introduction
+You have been given the task of answering the following questions using a graph consisting of
+an institution's data. The nodes and relationships are specified in Cypher as shown:
+
+`Nodes`
+
+```cypher
+CREATE (s1: Student {studentID: "1", lastName: "Doe", firstName: "Ana", middleName: "Maria"})
+CREATE (s2: Student {studentID: "2", lastName: "Ung", firstName: "Peter", middleName: "John"})
+CREATE (s3: Student {studentID: "3", lastName: "Doe", firstName: "John"})
+CREATE (s4: Student {studentID: "4", lastName: "Berre", firstName: "Stine"})
+CREATE (s5: Student {studentID: "5", lastName: "Travolta", firstName: "John"})
+CREATE (c1: Course {courseNr: "1", courseName: "Databases"})
+CREATE (c2: Course {courseNr: "2", courseName: "Programming"})
+CREATE (c3: Course {courseNr: "3", courseName: "Graphics"})
+CREATE (p1: Project {projectNr: "34", projectName: "eCommerce database"})
+CREATE (p2: Project {projectNr: "24", projectName: "eCommerce website"})
+CREATE (p3: Project {projectNr: "13", projectName: "User interface"})
+CREATE (p4: Project {projectNr: "26", projectName: "Reporting"})
+CREATE (r1: Room {roomName: "Pascal"})
+CREATE (r2: Room {roomName: "Seminar C"})
+CREATE (r3: Room {roomName: "Alpha"})
+CREATE (r4: Room {roomName: "Beta"})
+```
+`Relationships`
+```cypher
+CREATE (c1) – [:TAKESPLACEIN] –> (r1)
+CREATE (c1) – [:TAKESPLACEIN] –> (r3)
+CREATE (c1) – [:TAKESPLACEIN] –> (r4)
+CREATE (c2) – [:TAKESPLACEIN] –> (r2)
+CREATE (s1) – [:ENROLLEDIN] –> (c1)
+CREATE (s2) – [:ENROLLEDIN] –> (c1)
+CREATE (s3) – [:ENROLLEDIN] –> (c2)
+CREATE (s4) – [:ENROLLEDIN] –> (c1)
+CREATE (s1) – [:WORKSON {hours: "1"} ] –> (p1)
+CREATE (s1) – [:WORKSON {hours: "2"} ] –> (p2)
+CREATE (s2) – [:WORKSON {hours: "3"} ] –> (p1)
+CREATE (s2) – [:WORKSON {hours: "4"} ] –> (p2)
+CREATE (s2) – [:WORKSON {hours: "1"} ] –> (p3)
+CREATE (s2) – [:WORKSON {hours: "1"} ] –> (p4)
+CREATE (s3) – [:WORKSON {hours: "1"} ] –> (p1)
+CREATE (s3) – [:WORKSON {hours: "2"} ] –> (p2)
+CREATE (s3) – [:WORKSON {hours: "3"} ] –> (p4)
+```
+### Specify the following queries in Cypher and execute them in Neo4j
+
+**`Prerequisite` - Creation of Nodes and relationships**
+
+```cypher
+CREATE (s1: Student {studentID: "1", lastName: "Doe", firstName: "Ana", middleName: "Maria"})
+CREATE (r1: Room {roomName: "Pascal"})
+CREATE (p1: Project {projectNr: "34", projectName: "eCommerce database"})
+CREATE (c1: Course {courseNr: "1", courseName: "Databases"})
+CREATE
+	(c1) – [:TAKESPLACEIN] –> (r1),
+	(s1) – [:ENROLLEDIN] –> (c1),
+	(s1) – [:WORKSON {hours: 1} ] –> (p1)
+ 
+CREATE (s2: Student {studentID: "2", lastName: "Ung", firstName: "Peter", middleName: "John"})
+CREATE (c2: Course {courseNr: "2", courseName: "Programming"})
+CREATE (p2: Project {projectNr: "24", projectName: "eCommerce website"})
+CREATE (r2: Room {roomName: "Seminar C"})
+CREATE
+	 (c2) – [:TAKESPLACEIN] –> (r2),
+     (s2) – [:ENROLLEDIN] –> (c1),
+     (s1) – [:WORKSON {hours: 2} ] –> (p2),
+     (s2) – [:WORKSON {hours: 3} ] –> (p1),
+     (s2) – [:WORKSON {hours: 4} ] –> (p2)
+
+CREATE (s3: Student {studentID: "3", lastName: "Doe", firstName: "John"})
+CREATE (c3: Course {courseNr: "3", courseName: "Graphics"})
+CREATE (p3: Project {projectNr: "13", projectName: "User interface"})
+CREATE (r3: Room {roomName: "Alpha"})
+CREATE
+	(c1) – [:TAKESPLACEIN] –> (r3),
+	(s3) – [:ENROLLEDIN] –> (c2),
+	(s2) – [:WORKSON {hours: 1} ] –> (p3),
+	(s3) – [:WORKSON {hours: 1} ] –> (p1),
+	(s3) – [:WORKSON {hours: 2} ] –> (p2)
+	
+CREATE (s4: Student {studentID: "4", lastName: "Berre", firstName: "Stine"})
+CREATE (p4: Project {projectNr: "26", projectName: "Reporting"})
+CREATE (r4: Room {roomName: "Beta"})
+CREATE
+	(c1) – [:TAKESPLACEIN] –> (r4),
+	(s4) – [:ENROLLEDIN] –> (c1),
+	(s2) – [:WORKSON {hours: 1} ] –> (p4),
+	(s3) – [:WORKSON {hours: 3} ] –> (p4)
+
+CREATE (s5: Student {studentID: "5", lastName: "Travolta", firstName: "John"})
+```
+
+**`Queries`**
+
+#### 1. In which rooms do courses with course number "1" take place? 
+> Retrieve the course name and the names of the rooms in which the course takes place
+
+```cypher
+MATCH (c:Course {courseNr: '1'})-[:TAKESPLACEIN]->(r:Room)
+RETURN c.courseName AS Course_Name, r.roomName AS Room_Name
+```
+```text
++-------------------------+
+¦"Course_Name"¦"Room_Name"¦
+¦-------------+-----------¦
+¦"Databases"  ¦"Beta"     ¦
++-------------+-----------¦
+¦"Databases"  ¦"Alpha"    ¦
++-------------+-----------¦
+¦"Databases"  ¦"Pascal"   ¦
++-------------------------+
+```
+#### 2. How many hours and in which projects do students with student number "1" works? 
+> Retrieve the first name of the student, the project the student works on, and the corresponding number of hours worked on the project.
+
+```cypher
+MATCH (s:Student {studentID: '1'})-[rel:WORKSON]->(p:Project)
+RETURN s.firstName AS Student_First_Name, p.projectName AS Project_Name, sum(rel.hours) AS Project_Hours
+```
+```text
++---------------------------------------------------------+
+¦"Student_First_Name"¦"Project_Name"      ¦"Project_Hours"¦
+¦--------------------+--------------------+---------------¦
+¦"Ana"               ¦"eCommerce website" ¦2              ¦
++--------------------+--------------------+---------------¦
+¦"Ana"               ¦"eCommerce database"¦1              ¦
++---------------------------------------------------------+
+```
+#### 3. Which students and how many hours do they work on the project with project number "24"? 
+> Retrieve the project name, the last name of the student and the corresponding number of hours worked on the project
+
+```cypher
+MATCH (s:Student )-[rel:WORKSON]->(p:Project{projectNr:'24'})
+RETURN s.lastName AS Student_Last_Name, p.projectName AS Project24_Name,sum(rel.hours) AS Project_Hours
+```
+```text
++-------------------------------------------------------+
+¦"Student_Last_Name"¦"Project24_Name"   ¦"Project_Hours"¦
+¦-------------------+-------------------+---------------¦
+¦"Doe"              ¦"eCommerce website"¦4              ¦
++-------------------+-------------------+---------------¦
+¦"Ung"              ¦"eCommerce website"¦4              ¦
++-------------------------------------------------------+
+```
+#### 4. Which students work on which projects and how many hours? 
+> Retrieve the last name of the students, the name of the projects they work on, and the corresponding number of hours. Order the results by the last name of the students. Limit the results to four
+
+```cypher
+MATCH (s:Student )-[rel:WORKSON]->(p:Project)
+RETURN s.lastName AS Student_Last_Name, p.projectName AS Project_Name,sum(rel.hours) AS Project_Hours ORDER BY s.lastName LIMIT 4
+```
+#### 5. Which students work on more than two projects and on how many projects exactly?
+> Retrieve the last name of the students and the corresponding number of projects. Order the results by the number of projects
+
+`Using firstName instead of lastName as s1 and s3 have the same lastName`
+
+```cypher
+MATCH (s:Student )-[rel:WORKSON]->(p:Project)
+RETURN s.lastName AS Student_Last_Name, count(rel) AS No_of_Projects ORDER BY count(rel)
+```
+```text
++------------------------------------+
+¦"Student_Last_Name"¦"No_of_Projects"¦
+¦-------------------+----------------¦
+¦"Ung"              ¦4               ¦
++-------------------+----------------¦
+¦"Doe"              ¦5               ¦
++------------------------------------+
+```
+`Alternative`
+```cypher
+MATCH (s:Student )-[rel:WORKSON]->(p:Project)
+RETURN s.firstName AS Student_First_Name, count(rel) AS No_of_Projects ORDER BY count(rel)
+```
+```text
+¦"Student_First_Name"¦"No_of_Projects"¦
+¦--------------------+----------------¦
+¦"Ana"               ¦2               ¦
++--------------------+----------------¦
+¦"John"              ¦3               ¦
++--------------------+----------------¦
+¦"Peter"             ¦4               ¦
++-------------------------------------+
+```
+#### 6. Which students have the same last name and work on the same projects? 
+> Retrieve the first name of the students and the name of the projects they share
+
+```cypher
+MATCH (x:Student)-[:WORKSON]->(y:Project),(x1:Student)-[:WORKSON]->(y1:Project)
+WHERE x.lastName = x1.lastName AND y.projectName = y1.projectName
+RETURN DISTINCT x.firstName AS Student_First_Name, y.projectName AS Project_Name ORDER BY x.firstName;
+```
+```text
++-----------------------------------------+
+¦"Student_First_Name"¦"Project_Name"      ¦
+¦--------------------+--------------------¦
+¦"Ana"               ¦"eCommerce website" ¦
++--------------------+--------------------¦
+¦"Ana"               ¦"eCommerce database"¦
++--------------------+--------------------¦
+¦"John"              ¦"eCommerce website" ¦
++--------------------+--------------------¦
+¦"John"              ¦"eCommerce database"¦
++-----------------------------------------+
+```
